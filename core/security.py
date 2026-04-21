@@ -1,8 +1,11 @@
 import os
 import bcrypt
 import jwt
+import hashlib
+import hmac
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
+from fastapi import HTTPException, status
 
 load_dotenv()
 
@@ -14,11 +17,9 @@ if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY is not set in .env")
 
 
-#PASSWORD HASHING
-
 def hash_password(password: str) -> str:
     """
-    Convert plain password → hashed password
+    Hash user password using bcrypt
     """
     password_bytes = password.encode("utf-8")
     salt = bcrypt.gensalt()
@@ -26,11 +27,9 @@ def hash_password(password: str) -> str:
     return hashed.decode("utf-8")
 
 
-#PASSWORD VERIFICATION
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Compare plain password with hashed password
+    Verify password against bcrypt hash
     """
     try:
         return bcrypt.checkpw(
@@ -41,7 +40,32 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-#CREATE JWT TOKEN
+def hash_api_key(api_key: str) -> str:
+    """
+    Hash API key using SHA256
+    """
+    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+
+
+def verify_api_key(raw_key: str, stored_hash: str) -> bool:
+    """
+    Verify API key using constant-time comparison
+    """
+    if not raw_key or not stored_hash:
+        return False
+
+    computed_hash = hash_api_key(raw_key)
+    return hmac.compare_digest(computed_hash, stored_hash)
+
+
+def get_api_key_prefix(api_key: str) -> str:
+    """
+    Extract first 8 characters of API key
+    """
+    if not api_key or len(api_key) < 8:
+        raise ValueError("Invalid API key format")
+    return api_key[:8]
+
 
 def create_access_token(data: dict) -> str:
     """
@@ -55,14 +79,11 @@ def create_access_token(data: dict) -> str:
 
     to_encode.update({
         "exp": expire,
-        "type": "access"  
+        "type": "access"
     })
 
-    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return token
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-
-#DECODE JWT TOKEN
 
 def decode_access_token(token: str) -> dict:
     """
@@ -70,11 +91,16 @@ def decode_access_token(token: str) -> dict:
     Raises HTTP-friendly errors
     """
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
     except jwt.ExpiredSignatureError:
-        raise Exception("Token has expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired"
+        )
 
     except jwt.InvalidTokenError:
-        raise Exception("Invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
