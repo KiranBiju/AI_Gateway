@@ -3,19 +3,38 @@ import time
 import logging
 
 
-def local_model_generate(prompt: str, system_prompt: str = None, timeout: int = 100):
+def local_model_generate(
+    prompt: str,
+    system_prompt: str = None,
+    model: str = "phi3",
+    max_tokens: int = 60,
+    timeout: int = 120,
+    mode: str = "fast"   # fast | balanced | detailed
+):
     url = "http://localhost:11434/api/generate"
 
     final_prompt = prompt
     if system_prompt:
         final_prompt = f"{system_prompt}\n\nUser: {prompt}"
 
+    if mode == "fast":
+        max_tokens = min(max_tokens, 60)
+        final_prompt = f"Answer briefly in 3-4 lines.\n\n{final_prompt}"
+
+    elif mode == "balanced":
+        max_tokens = min(max_tokens, 120)
+
+    elif mode == "detailed":
+        max_tokens = min(max_tokens, 250)
+
     payload = {
-        "model": "phi3",
+        "model": model,
+
         "prompt": final_prompt,
         "stream": False,
+
         "options": {
-            "num_predict": 120,       
+            "num_predict": max_tokens,
             "temperature": 0.7
         }
     }
@@ -27,21 +46,34 @@ def local_model_generate(prompt: str, system_prompt: str = None, timeout: int = 
         response.raise_for_status()
 
         data = response.json()
-
         generated_text = data.get("response", "")
 
         latency = time.time() - start_time
 
         result = {
             "success": True,
-            "model": payload["model"],
+            "model": model,
+
             "response": generated_text,
 
             "metadata": {
+                "mode": mode,
                 "latency_seconds": latency,
-                "eval_count": data.get("eval_count"),
-                "prompt_eval_count": data.get("prompt_eval_count"),
-                "total_duration_ns": data.get("total_duration"),
+
+                "prompt_tokens": data.get("prompt_eval_count"),
+                "output_tokens": data.get("eval_count"),
+
+                "total_time_sec": (
+                    data.get("total_duration", 0) / 1e9
+                    if data.get("total_duration") else None
+                ),
+
+                "eval_time_sec": (
+                    data.get("eval_duration", 0) / 1e9
+                    if data.get("eval_duration") else None
+                ),
+
+                "max_tokens_used": max_tokens
             }
         }
 
@@ -56,9 +88,9 @@ def local_model_generate(prompt: str, system_prompt: str = None, timeout: int = 
 
         return {
             "success": False,
-            "model": "phi3",
+            "model": model,
             "response": None,
-            "error": "Request timed out",
+            "error": "timeout",
             "metadata": {
                 "latency_seconds": None
             }
@@ -69,12 +101,10 @@ def local_model_generate(prompt: str, system_prompt: str = None, timeout: int = 
 
         return {
             "success": False,
-            "model": "phi3",
+            "model": model,
             "response": None,
             "error": str(e),
             "metadata": {
                 "latency_seconds": None
             }
         }
-    
-    
