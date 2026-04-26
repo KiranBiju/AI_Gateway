@@ -7,19 +7,20 @@ def local_model_generate(
     prompt: str,
     system_prompt: str = None,
     model: str = "phi3",
-    max_tokens: int = 60,
+    max_tokens: int = 120,
     timeout: int = 120,
-    mode: str = "fast"   # fast | balanced | detailed
+    mode: str = "fast"
 ):
     url = "http://localhost:11434/api/generate"
 
     final_prompt = prompt
+
     if system_prompt:
         final_prompt = f"{system_prompt}\n\nUser: {prompt}"
 
     if mode == "fast":
-        max_tokens = min(max_tokens, 60)
-        final_prompt = f"Answer briefly in 3-4 lines.\n\n{final_prompt}"
+        max_tokens = min(max_tokens, 120)
+        final_prompt = f"Give a complete answer in 3–4 short sentences. Do not cut off mid-sentence.\n\n{final_prompt}"
 
     elif mode == "balanced":
         max_tokens = min(max_tokens, 120)
@@ -29,10 +30,8 @@ def local_model_generate(
 
     payload = {
         "model": model,
-
         "prompt": final_prompt,
         "stream": False,
-
         "options": {
             "num_predict": max_tokens,
             "temperature": 0.7
@@ -50,61 +49,63 @@ def local_model_generate(
 
         latency = time.time() - start_time
 
-        result = {
+        input_tokens = data.get("prompt_eval_count")
+        output_tokens = data.get("eval_count")
+
+        return {
             "success": True,
             "model": model,
-
             "response": generated_text,
 
             "metadata": {
-                "mode": mode,
                 "latency_seconds": latency,
-
-                "prompt_tokens": data.get("prompt_eval_count"),
-                "output_tokens": data.get("eval_count"),
-
-                "total_time_sec": (
-                    data.get("total_duration", 0) / 1e9
-                    if data.get("total_duration") else None
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": (
+                    (input_tokens or 0) + (output_tokens or 0)
+                    if input_tokens is not None and output_tokens is not None
+                    else None
                 ),
-
-                "eval_time_sec": (
-                    data.get("eval_duration", 0) / 1e9
-                    if data.get("eval_duration") else None
-                ),
-
-                "max_tokens_used": max_tokens
+                "provider": "local",
+                "mode": mode
             }
         }
 
-        logging.info("PROMPT: %s", prompt)
-        logging.info("RESPONSE: %s", generated_text)
-        logging.info("METADATA: %s", result["metadata"])
-
-        return result
-
-    except requests.exceptions.Timeout:
-        logging.error("TIMEOUT for prompt: %s", prompt)
-
-        return {
-            "success": False,
-            "model": model,
-            "response": None,
-            "error": "timeout",
-            "metadata": {
-                "latency_seconds": None
-            }
-        }
-
-    except requests.exceptions.RequestException as e:
-        logging.error("REQUEST FAILED: %s | Prompt: %s", str(e), prompt)
-
+    except Exception as e:
         return {
             "success": False,
             "model": model,
             "response": None,
             "error": str(e),
             "metadata": {
-                "latency_seconds": None
+                "latency_seconds": None,
+                "input_tokens": None,
+                "output_tokens": None,
+                "total_tokens": None,
+                "provider": "local",
+                "mode": mode
             }
         }
+    
+if __name__ == "__main__":
+    import json
+
+    print("\n Testing Local Model (Phi-3)\n")
+
+    test_prompt = input("Enter your prompt: ")
+
+    result = local_model_generate(
+        prompt=test_prompt,
+        system_prompt="You are a helpful assistant",
+        model="phi3",
+        mode="fast"
+    )
+
+
+    
+
+    print("\n RESPONSE:\n")
+    print(result["response"])
+
+    print("\n METADATA:\n")
+    print(json.dumps(result["metadata"], indent=2))       
