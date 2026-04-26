@@ -87,25 +87,3 @@ def local_model_generate(
             }
         }
     
-if __name__ == "__main__":
-    import json
-
-    print("\n Testing Local Model (Phi-3)\n")
-
-    test_prompt = input("Enter your prompt: ")
-
-    result = local_model_generate(
-        prompt=test_prompt,
-        system_prompt="You are a helpful assistant",
-        model="phi3",
-        mode="fast"
-    )
-
-
-    
-
-    print("\n RESPONSE:\n")
-    print(result["response"])
-
-    print("\n METADATA:\n")
-    print(json.dumps(result["metadata"], indent=2))       
