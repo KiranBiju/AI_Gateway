@@ -1,7 +1,9 @@
 import secrets
+import hashlib
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from app.db import models
+from app.db.models import ApiKey
 from typing import List, Dict
 
 
@@ -71,3 +73,14 @@ def get_api_keys(user_id: int, db: Session) -> List[Dict]:
 
     except SQLAlchemyError:
         raise Exception("Failed to fetch API keys")
+
+
+def verify_api_key_in_db(api_key: str, db):
+    key_record = db.query(ApiKey).filter(
+        ApiKey.api_key == api_key
+    ).first()
+
+    if not key_record:
+        return None
+
+    return key_record.user_id

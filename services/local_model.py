@@ -7,26 +7,28 @@ def local_model_generate(
     prompt: str,
     system_prompt: str = None,
     model: str = "phi3",
-    max_tokens: int = 120,
+    max_tokens: int = 160,
     timeout: int = 120,
     mode: str = "fast"
+    
 ):
     url = "http://localhost:11434/api/generate"
 
-    final_prompt = prompt
+    instruction = "Answer clearly in 3-4 complete sentences. Finish your answer properly. Do not give incomplete answer. Do not ask follow-up questions. End with a complete conclusion sentence."
 
     if system_prompt:
-        final_prompt = f"{system_prompt}\n\nUser: {prompt}"
+      final_prompt = f"{system_prompt}\n\n{instruction}\n\nQuestion: {prompt}"
+    else:
+      final_prompt = f"{instruction}\n\nQuestion: {prompt}"
 
     if mode == "fast":
-        max_tokens = min(max_tokens, 120)
-        final_prompt = f"Give a complete answer in 3–4 short sentences. Do not cut off mid-sentence.\n\n{final_prompt}"
-
+        max_tokens = 150
+        
     elif mode == "balanced":
-        max_tokens = min(max_tokens, 120)
+        max_tokens = 250
 
     elif mode == "detailed":
-        max_tokens = min(max_tokens, 250)
+        max_tokens = 350
 
     payload = {
         "model": model,
@@ -34,14 +36,23 @@ def local_model_generate(
         "stream": False,
         "options": {
             "num_predict": max_tokens,
-            "temperature": 0.7
+            "temperature": 0.7,
+            "top_k": 40,          
+            "top_p": 0.9,
+            "repeat_penalty": 1.1
         }
     }
 
     start_time = time.time()
 
     try:
-        response = requests.post(url, json=payload, timeout=timeout)
+        response = requests.post(
+            url,
+            json=payload,
+            timeout=timeout,
+            headers={"Connection": "keep-alive"}
+        )
+
         response.raise_for_status()
 
         data = response.json()
@@ -86,4 +97,3 @@ def local_model_generate(
                 "mode": mode
             }
         }
-    

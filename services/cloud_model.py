@@ -45,6 +45,10 @@ def cloud_model_generate(
 
     elif mode == "balanced":
         max_tokens = min(max_tokens, 150)
+        messages.append({
+            "role": "system",
+            "content": "Answer in 3-4 complete sentences."
+        })
 
     elif mode == "detailed":
         max_tokens = min(max_tokens, 300)

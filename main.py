@@ -4,6 +4,7 @@ from app.db import models
 from app.api.routes import auth
 from app.schemas.users import UserCreate, UserLogin
 from app.api.routes import api_keys
+from app.api.routes import generate
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -12,6 +13,8 @@ app = FastAPI()
 app.include_router(auth.router)
 
 app.include_router(api_keys.router)
+
+app.include_router(generate.router)
 
 @app.get("/")
 async def head_root():

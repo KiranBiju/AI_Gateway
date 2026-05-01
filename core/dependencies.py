@@ -1,7 +1,8 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-
+from fastapi import Header
+from app.services.api_key_service import verify_api_key_in_db
 from app.core.security import decode_access_token
 from app.db.database import get_db
 from app.db import models
@@ -41,3 +42,42 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         )
+    
+def get_api_key_user(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+):
+    
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing API key",
+        )
+
+    try:
+        scheme, api_key = authorization.split()
+        if scheme.lower() != "bearer":
+            raise ValueError()
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization format",
+        )
+
+    user_id = verify_api_key_in_db(api_key, db)
+
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+        )
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+
+    return user    
