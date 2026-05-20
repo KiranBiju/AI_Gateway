@@ -1,6 +1,8 @@
 # 🚀 AI Gateway — Models-as-a-Service (MaaS)
 
-IMAGE
+<p align="center">
+  <img src="assets/Home.png" width="850"/>
+</p>
 
 > Production-grade AI infrastructure that unifies local and cloud LLMs behind a single API with intelligent routing, secure API keys, rate limiting, caching, usage analytics, and a Streamlit frontend.
 
@@ -24,7 +26,7 @@ Instead of hardcoding a single LLM, this platform:
 
 ---
 
-WATCH DEMO VIDEO https://drive.google.com/file/d/11BIwEJm8U8ZgiBqWG5-jepaljv3wUQ8K/view?usp=sharing
+[WATCH THE DEMO](https://drive.google.com/file/d/11BIwEJm8U8ZgiBqWG5-jepaljv3wUQ8K/view?usp=sharing)
 
 ---
 
