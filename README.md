@@ -1,154 +1,260 @@
 # 🚀 AI Gateway — Models-as-a-Service (MaaS)
 
-> Production-grade AI infrastructure that intelligently routes requests across multiple models to optimize cost, latency, and scalability.
+IMAGE
+
+> Production-grade AI infrastructure that unifies local and cloud LLMs behind a single API with intelligent routing, secure API keys, rate limiting, caching, usage analytics, and a Streamlit frontend.
 
 ---
 
 ## 🧠 Overview
 
-AI Gateway is a centralized **Models-as-a-Service (MaaS)** platform that abstracts multiple AI providers behind a single high-performance API.
+AI Gateway is a full-stack **Models-as-a-Service (MaaS)** platform that abstracts multiple AI providers behind one production-grade API.
 
-Instead of directly calling one model, this system:
+Instead of hardcoding a single LLM, this platform:
 
-* Dynamically **routes requests** to the best model
-* Balances **cost vs performance**
-* Supports **hybrid AI (local + cloud)**
-* Provides **rate limiting, caching, and usage analytics**
+- Dynamically routes requests to the optimal model
+- Balances cost, latency, and response quality
+- Supports hybrid inference (local + cloud)
+- Provides secure API key management
+- Enforces rate limits
+- Caches responses
+- Tracks usage and costs
+- Offers an interactive Streamlit UI
 
----
-
-## ⚡ Key Features
-
-### 🔐 Authentication & API Keys
-
-* User signup & login system
-* Secure password hashing (bcrypt)
-* JWT-based authentication
-* API key generation system
-* API keys stored securely using:
-
-  * Prefix + SHA256 hash (no raw key storage)
-* API key revocation support (`is_active` flag)
 
 ---
 
-### 🤖 Hybrid AI System (Core)
-
-* Local model support via Ollama (CPU-based)
-* Cloud model integration (Groq API)
-* Unified response format across all models
+WATCH DEMO VIDEO https://drive.google.com/file/d/11BIwEJm8U8ZgiBqWG5-jepaljv3wUQ8K/view?usp=sharing
 
 ---
 
-### 🧠 Intelligent Routing Engine
+# ✨ Key Features
 
-* Decides which model to use based on:
+## 🔐 Authentication & Authorization
 
-  * Task complexity
-  * Performance constraints
-* Strategy:
-
-  * Simple queries → Local model
-  * Complex queries → Cloud model
-* Built-in fallback:
-
-  * Local → Cloud → Fail gracefully
+- User signup and login
+- Password hashing with `bcrypt`
+- JWT-based authentication
+- Secure API key generation
+- API key hashing using SHA-256
+- API key revocation (`is_active = False`)
 
 ---
 
-### ⚡ Performance Optimization
+## 🔑 API Key Management
 
-#### 🔹 Rate Limiting (Redis)
+Each user can:
 
-* 100 requests/min per API key
-* Prevents abuse & cost explosion
-* Implemented using Redis counters
+- Generate multiple API keys
+- List all active keys
+- Revoke compromised keys instantly
+- Select API keys from the frontend
 
-#### 🔹 Caching (Redis)
+API keys are stored securely as:
 
-* Prompt-based caching
-* SHA256 hash of request
-* Instant response for repeated queries
-* Reduces latency and cost
+- Key prefix (e.g., `agw_ab12cd`)
+- SHA-256 hash
+
+Raw keys are shown only once at creation.
 
 ---
 
-### 💰 Cost Tracking & Analytics
+## 🤖 Hybrid AI Inference
 
-* Token-level usage tracking
-* Per-request logging in PostgreSQL
+### Local Models
+Powered by : Ollama
 
-#### Tracks:
+Examples:
+- `phi3`
+- `mistral`
+- `llama3`
 
-* User ID
-* Model used
-* Provider (local/cloud)
-* Input/output tokens
+### Cloud Models
+Powered by : Groq
+
+Examples:
+- `llama-3.1-8b-instant`
+- `llama-3.3-70b-versatile`
+
+---
+
+## 🧠 Intelligent Routing Engine
+
+Automatically selects the best model based on:
+
+- Task complexity
+- Latency requirements
+- Cost constraints
+- Provider availability
+
+### Example Strategy
+
+| Mode       | Preferred Provider |
+|----------: |-------------------|
+| fast       | Groq Cloud |
+| balanced   | Local → Cloud fallback |
+| detailed   | Local or Cloud |
+
+---
+
+## 🔄 Fallback Mechanism
+
+If the selected model fails:
+
+1. Retry alternate provider
+2. Return graceful error if all providers fail
+
+---
+
+## ⚡ Rate Limiting (Redis)
+
+- 100 requests/minute per API key
+- Prevents abuse and runaway costs
+
+Implemented using Redis.
+
+---
+
+## ⚡ Response Caching (Redis)
+
+- Prompt + mode hashed with SHA-256
+- Cached responses returned instantly
+- Reduces latency and cloud costs
+
+---
+
+## 💰 Usage Tracking & Cost Analytics
+
+Every request is logged to PostgreSQL.
+
+Tracked fields:
+
+- User ID
+- API Key ID
+- Model
+- Provider
+- Input tokens
+- Output tokens
+- Total tokens
+- Latency
+- Cost
+- Cache hit flag
+- Timestamp
+
+---
+
+## 📊 Usage Analytics API
+
+Endpoint:
+
+```http
+GET /v1/usage
+````
+
+Returns:
+
+* Total requests
 * Total tokens
-* Latency
-* Cost
+* Total cost
+* Average latency
+* Model usage breakdown
+* Recent requests
 
 ---
 
-### 📊 Usage API
+## 🌐 Streamlit Frontend
 
-* Endpoint: `/v1/usage`
-* Provides:
+Built using Streamlit.
 
-  * Total requests
-  * Total tokens
-  * Total cost
-  * Model usage breakdown
+Includes:
+
+* Login / Signup
+* API Key Management
+* AI Playground with live streaming responses
+* Usage Analytics Dashboard
+* Admin Dashboard (foundation)
 
 ---
 
-## 🏗️ Architecture
+## 📡 Server-Sent Events (Streaming)
 
+Responses stream token-by-token like ChatGPT.
+
+Frontend displays:
+
+* Live generation
+* Final clean response
+* Metadata (latency, tokens, model)
+
+---
+
+# 🏗️ Architecture
+
+```text
+                ┌───────────────────────────────┐
+                │       Streamlit Frontend      │
+                └───────────────┬───────────────┘
+                                │
+                                ▼
+                ┌───────────────────────────────┐
+                │        FastAPI Gateway        │
+                │ JWT Auth + API Key Validation │
+                └───────────────┬───────────────┘
+                                │
+                                ▼
+                ┌───────────────────────────────┐
+                │      Rate Limiter (Redis)     │
+                └───────────────┬───────────────┘
+                                │
+                                ▼
+                ┌───────────────────────────────┐
+                │       Cache Layer (Redis)     │
+                └───────────────┬───────────────┘
+                                │
+                                ▼
+                ┌───────────────────────────────┐
+                │   Intelligent Router Engine   │
+                └───────────────┬───────────────┘
+                                │
+                  ┌─────────────┴─────────────┐
+                  ▼                           ▼
+        ┌──────────────────┐       ┌────────────────────┐
+        │ Local Models     │       │ Cloud Models       │
+        │ Ollama           │       │ Groq API           │
+        └────────┬─────────┘       └─────────┬──────────┘
+                 └──────────────┬────────────┘
+                                ▼
+                ┌───────────────────────────────┐
+                │     Unified Response Layer    │
+                └───────────────┬───────────────┘
+                                ▼
+                ┌───────────────────────────────┐
+                │ Usage Logging (PostgreSQL)    │
+                └───────────────────────────────┘
 ```
-Client / App
-     ↓
-FastAPI Gateway (Auth + API Key)
-     ↓
-Rate Limiter (Redis)
-     ↓
-Cache Layer (Redis)
-     ↓
-Routing Engine (Core Brain)
-     ↓
- ┌───────────────┬───────────────┐
- ↓               ↓
-Local Model     Cloud Model
-(Ollama)        (Groq API)
-     ↓               ↓
-     └────→ Unified Response ←────┘
-             ↓
-      Usage Logging (PostgreSQL)
-             ↓
-         Response
-```
 
 ---
 
-## 🔄 Request Flow
+# 🔄 End-to-End Request Flow
 
-1. Client sends request with API key
-2. API key is validated (prefix + hash match)
-3. Rate limit check (Redis)
-4. Cache lookup
-
-   * If hit → return instantly
-5. Routing engine decides model
-6. Model executes (local or cloud)
-7. Response normalized
-8. Result cached
-9. Usage logged (PostgreSQL)
-10. Response returned
+1. User logs in.
+2. User generates API key.
+3. Client sends prompt with `x-api-key`.
+4. API key validated.
+5. Rate limit check.
+6. Cache lookup.
+7. Router selects model.
+8. Model generates response.
+9. Tokens stream to client.
+10. Response cached.
+11. Usage logged.
+12. Analytics updated.
 
 ---
 
-## 📂 Project Structure
+# 📂 Project Structure
 
-```
+```text
 app/
 ├── core/
 │   ├── config.py
@@ -173,144 +279,248 @@ app/
 │
 ├── schemas/
 │   ├── users.py
-│   └── api_keys.py
+│   ├── api_keys.py
+│   └── generate.py
+│
+├── frontend/
+│   ├── Home.py
+│   ├── utils.py
+│   └── pages/
+│       ├── 1_Login.py
+│       ├── 2_API_Keys.py
+│       ├── 3_AI_Playground.py
+│       ├── 4_Usage_Analytics.py
+│       └── 5_Admin_Dashboard.py
 │
 └── main.py
 ```
 
 ---
 
-## 🔧 Tech Stack
+# 🛠️ Tech Stack
 
-| Layer                 | Technology   |
-| --------------------- | ------------ |
-| Backend               | FastAPI      |
-| Database              | PostgreSQL   |
-| Cache & Rate Limiting | Redis        |
-| Local AI              | Ollama       |
-| Cloud AI              | Groq API     |
-| ORM                   | SQLAlchemy   |
-| Auth                  | JWT + bcrypt |
+| Layer          | Technology         |
+| -------------- | ------------------ |
+| Backend API    | Python / FastAPI   |
+| Frontend       | Streamlit          |
+| Database       | PostgreSQL         |
+| Cache          | Redis              |
+| ORM            | SQLAlchemy         |
+| Authentication | JWT + bcrypt       |
+| Local LLMs     | Ollama             |
+| Cloud LLMs     | Groq API           |
 
 ---
 
-## 🧪 API Endpoints
+# 📡 API Endpoints
 
-### 🔐 Auth
+## Authentication
 
 * `POST /signup`
 * `POST /login`
 
----
-
-### 🔑 API Keys
+## API Keys
 
 * `POST /api-keys/create`
 * `GET /api-keys/list`
 * `POST /api-keys/revoke`
 
----
-
-### 🤖 AI
+## AI
 
 * `POST /v1/generate`
 
----
-
-### 📊 Usage
+## Analytics
 
 * `GET /v1/usage`
 
 ---
 
-## 📌 Example Request
+# 📌 Example Request
 
-```
+```http
 POST /v1/generate
-Authorization: Bearer <API_KEY>
+x-api-key: agw_xxxxxxxxxxxxxxxxxxxxxxxxxx
+Content-Type: application/json
 
 {
-  "prompt": "Explain Web3",
+  "prompt": "Explain Web3 like I’m 10 years old.",
   "mode": "fast"
 }
 ```
 
 ---
 
-## 📌 Example Response
+# 📌 Example Response (Streaming)
 
-```
-{
-  "success": true,
-  "provider": "cloud",
-  "model": "llama-3.1-8b-instant",
-  "response": "...",
-  "metadata": {
-    "latency_seconds": 0.5,
-    "input_tokens": 50,
-    "output_tokens": 60,
-    "total_tokens": 110,
-    "mode": "fast"
-  }
-}
+```text
+data: {"token":"Web3"}
+data: {"token":" is"}
+data: {"token":" the"}
+...
+data: [DONE]
 ```
 
 ---
 
-## 🔐 Security Design
+# 🔐 Security Design
 
 * Passwords hashed using bcrypt
-* API keys:
-
-  * Never stored in raw form
-  * Stored as prefix + SHA256 hash
-* JWT-based authentication
-* API key revocation supported
+* API keys hashed using SHA-256
+* JWT authentication
+* API key revocation
+* Per-key rate limiting
 
 ---
 
-## 🚀 Why This Project Stands Out
+# 🚀 Getting Started
 
-This is not a basic AI app — it is **AI infrastructure**.
+## 1. Clone Repository
 
-### Demonstrates:
+```bash
+git clone https://github.com/your-username/ai-gateway.git
+cd ai-gateway
+```
 
-* System design thinking
-* Scalability & performance optimization
-* Multi-model orchestration
+## 2. Create Virtual Environment
+
+```bash
+python -m venv venv
+```
+
+### Windows
+
+```bash
+venv\Scripts\activate
+```
+
+### macOS/Linux
+
+```bash
+source venv/bin/activate
+```
+
+## 3. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+## 4. Configure Environment Variables
+
+Create `.env`:
+
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/ai_gateway
+SECRET_KEY=your_super_secret_key
+GROQ_API_KEY=your_groq_api_key
+REDIS_URL=redis://localhost:6379/0
+```
+
+## 5. Start PostgreSQL
+
+Ensure PostgreSQL is running and database `ai_gateway` exists.
+
+## 6. Start Redis
+
+```bash
+redis-server
+```
+
+## 7. Start Ollama
+
+```bash
+ollama serve
+ollama pull phi3
+```
+
+## 8. Run FastAPI Backend
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Backend URL:
+
+```text
+http://127.0.0.1:8000
+```
+
+## 9. Run Streamlit Frontend
+
+```bash
+cd app/frontend
+streamlit run Home.py
+```
+
+Frontend URL:
+
+```text
+http://localhost:8501
+```
+
+---
+
+# 🐳 Run with Docker (Upcoming)
+
+Docker support is planned.
+
+Future deployment stack:
+
+* FastAPI
+* Streamlit
+* PostgreSQL
+* Redis
+* Ollama
+
+---
+
+# 📈 Current Status
+
+* ✅ Authentication system
+* ✅ Secure API key management
+* ✅ Hybrid local + cloud AI
+* ✅ Intelligent routing
+* ✅ Streaming responses
+* ✅ Redis rate limiting
+* ✅ Redis caching
+* ✅ Usage analytics
+* ✅ Streamlit frontend
+
+---
+
+# 🔮 Upcoming Features
+
+* 📚 Retrieval-Augmented Generation (RAG)
+* 🤖 Agentic workflows with LangGraph
+* 🐳 Docker & Docker Compose
+* ☁️ Cloud deployment
+* 📊 Advanced admin dashboard
+* 🔍 Observability and tracing
+
+---
+
+# 🏆 Why This Project Stands Out
+
+This project demonstrates:
+
 * Production-grade backend engineering
+* System design skills
+* Multi-model orchestration
+* Cost optimization
+* Security best practices
+* SaaS platform architecture
+* AI infrastructure development
 
 ---
 
-## 📈 Current Status
+# 🧠 One-Line Summary
 
-✅ Authentication system
-✅ API key management (secure)
-✅ Hybrid AI (local + cloud)
-✅ Intelligent routing engine
-✅ Rate limiting (Redis)
-✅ Caching layer (Redis)
-✅ Usage analytics API
+> A full-stack AI infrastructure platform that intelligently routes prompts across multiple LLM providers while handling authentication, rate limiting, caching, analytics, and live streaming responses.
 
 ---
 
-## 🔜 Upcoming Features
+# ⭐ Support
 
-* RAG (Retrieval Augmented Generation)
-* Agentic workflows (multi-step reasoning)
-* Dockerization & cloud deployment
-* Observability dashboard (metrics + logs) for both user and admin
+If you found this project useful, please consider giving it a ⭐ on GitHub.
 
----
-
-## 🧠 One-Line Summary
-
-> A production-grade AI Gateway that intelligently routes requests across local and cloud models with built-in cost optimization, caching, rate limiting, and usage tracking.
-
----
-
-## ⭐ If you find this useful
-
-Give it a ⭐ and feel free to contribute or fork!
-
----
+```
