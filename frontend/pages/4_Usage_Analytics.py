@@ -13,7 +13,7 @@ st.title("📊 Usage Analytics")
 selected_api_key = st.session_state.get("selected_api_key")
 
 if not selected_api_key:
-    st.warning("Please select an API key from the API Keys page first.")
+    st.warning("Select an API key from the API Keys page first.")
     st.stop()
 
 response = get(

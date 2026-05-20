@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 fastapi
 uvicorn[standard]
 sqlalchemy
@@ -6,6 +5,7 @@ psycopg2-binary
 python-dotenv
 bcrypt
 PyJWT
+pydantic[email]
 email-validator
 redis
 requests
@@ -20,23 +20,3 @@ plotly
 #langchain-community
 #langchain-core #Agentic Workflows (Upcoming)
 #numpy
-=======
-fastapi
-uvicorn[standard]
-
-sqlalchemy
-psycopg2-binary
-
-python-dotenv
-
-bcrypt
-PyJWT
-
-redis
-requests
-
-faiss-cpu
-sentence-transformers
-
-pydantic[email]
->>>>>>> 297153205ba25c12de14128144e4131d61cea697
