@@ -1,0 +1,21 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+python-dotenv
+bcrypt
+PyJWT
+email-validator
+redis
+requests
+ollama
+streamlit
+pandas
+plotly
+#faiss-cpu
+#sentence-transformers #RAG (Upcoming)
+#langgraph
+#langchain
+#langchain-community
+#langchain-core #Agentic Workflows (Upcoming)
+#numpy
